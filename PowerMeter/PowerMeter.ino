@@ -1,8 +1,15 @@
 #include <avr/sleep.h>
 
+#include <RH_ASK.h>
+RH_ASK rf_driver;
 
-#define TX_POWER 7 // Use 2 power pins to spread the load
-#define TX_POWER2 8 // the tx use 9-40mA and pins can only deliver 20mA
+#define TX_POWER 10 // Use 2 power pins to spread the load
+#define TX_POWER2 11 // the tx use 9-40mA and pins can only deliver 20mA
+
+#define TX_OUT 12 // This cant be changed, hardcoded in RH_ASK driver
+#define LED_PIN 13
+#define LED 13
+
 
 #define BLINK_PIN 2
 
@@ -11,7 +18,11 @@
 long blinkCounter = 0;
 long lastTime = -1000000000;
 
+float watts = 0.0;
+
 void setup() {
+  Serial.begin(9600);
+  Serial.println("Setup");
   for (byte i = 0; i <= A5; i++)  {
     pinMode (i, INPUT);  // set all pins to the most power saving state
     digitalWrite (i, LOW);  
@@ -23,16 +34,33 @@ void setup() {
   digitalWrite (TX_POWER2, LOW);
 
   pinMode (BLINK_PIN, INPUT);
-  digitalWrite (BLINK_PIN, LOW); 
-  
+  digitalWrite (BLINK_PIN, HIGH); 
 
+  pinMode (LED_PIN, INPUT);
+  digitalWrite (LED_PIN, LOW); 
+  
+  rf_driver.init();
 }
 
-void loop() {
+void goToSleep() {
+  pinMode (LED, OUTPUT);
+  digitalWrite (LED, HIGH);
+  delay (50);
+  digitalWrite (LED, LOW);
+  delay (50);
+  pinMode (LED, INPUT);
   // disable ADC
   ADCSRA = 0;  
-  
-  set_sleep_mode (SLEEP_MODE_PWR_DOWN);  
+
+  /* SLEEP_MODE_IDLE: 15 mA
+   SLEEP_MODE_ADC: 6.5 mA
+   SLEEP_MODE_PWR_SAVE: 1.62 mA
+   SLEEP_MODE_EXT_STANDBY: 1.62 mA
+   SLEEP_MODE_STANDBY : 0.84 mA
+   SLEEP_MODE_PWR_DOWN : 0.36 mA
+   */
+  //set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+  set_sleep_mode (SLEEP_MODE_STANDBY);  
   sleep_enable();
 
   // Do not interrupt before we go to sleep, or the
@@ -54,11 +82,10 @@ void loop() {
   // interrupts are turned on.
   interrupts ();  // one cycle
   sleep_cpu ();   // one cycle
-
 }
+void loop() {
+  Serial.println("loop");
 
-
-void interuptFunction() {
   // Main function when we see a blink on the power meter
   // Steps to do:
   // 1. Power on transmitter, so it can warm up while we do other stuff
@@ -66,6 +93,7 @@ void interuptFunction() {
   // 3. Add to counter for number of blinks seen
   // 4. Measure battery voltage
   // 5. Send all data
+  // 6. Power off
 
 
   // 1. Power on transmitter
@@ -74,14 +102,16 @@ void interuptFunction() {
   digitalWrite (TX_POWER, LOW); // GND of TX is connected to pins so pulling it LOW power the TX on
   digitalWrite (TX_POWER2, LOW); 
 
+  pinMode (LED_PIN, OUTPUT);
+  digitalWrite (LED_PIN, LOW);
 
   // 2. Calculate time since last blink
   long currentTime = millis();
   long deltaTime = currentTime - lastTime;
   lastTime = currentTime;
-  long watts = 123; //TODO
-
-  
+  watts = deltaTime/3600.0; //TODO
+  Serial.println(deltaTime);
+  Serial.println(millis());
   // 3. Add to counter for number of blinks seen
   blinkCounter++;
 
@@ -96,10 +126,38 @@ void interuptFunction() {
   out.concat(blinkCounter);
   out += ",\"w\":";
   out.concat(watts);
-  out += ",}";
+  out += ",\"v\":";
+  out.concat(battV);
+  
+  out += ",}"; // end
 
   // TODO send multiple times?
   Serial.println(out);
+  static char *msg = out.c_str();
+    
+  rf_driver.send((uint8_t *)msg, strlen(msg));
+  rf_driver.waitPacketSent();
+
+  // 6. Power off
+  pinMode (TX_POWER, INPUT); 
+  pinMode (TX_POWER2, INPUT);
+  digitalWrite (TX_POWER, LOW); // GND of TX is connected to pins so pulling it LOW power the TX on
+  digitalWrite (TX_POWER2, LOW); 
+  
+  digitalWrite (LED_PIN, HIGH);
+  pinMode (LED_PIN, OUTPUT);
+  delay(50);
+  goToSleep();
+}
+
+
+void interuptFunction() {
+  // cancel sleep as a precaution
+  sleep_disable();
+  // precautionary while we do other stuff
+  detachInterrupt (0);
+
+  // When this is done the loop() function will be called and we do everything there
   
 }
 
