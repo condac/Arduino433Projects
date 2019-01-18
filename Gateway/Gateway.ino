@@ -1,19 +1,22 @@
-#define NUM_NODES 10 // Arduino uno cant handle many due to low memory
+#define NUM_NODES 5 // Arduino uno cant handle many due to low memory
 #define BUF_SIZE 80
 
+#define RX_PIN 3
+#define TX_PIN 4
 // Include RadioHead Amplitude Shift Keying Library
 #include <RH_ASK.h>
 
 
 // Create Amplitude Shift Keying Object
-RH_ASK rf_driver;
+RH_ASK rf_driver(2000,RX_PIN,TX_PIN);
 
 void setup(){
+    Serial.begin(9600);
+    setupNodes();
     setupRadio();
     setupEthernet();
-    setupNodes();
     // Setup Serial Monitor
-    Serial.begin(9600);
+    debugCreate();
 }
  
 void loop(){

@@ -11,7 +11,8 @@ void setupNodes() {
 }
 
 byte parseId(char* inBuf) {
-  return 123;
+  byte out = inBuf[0];
+  return out;
 }
 
 void handleBuffer(char* buf) {
@@ -37,3 +38,9 @@ void handleBuffer(char* buf) {
     nodes[foundNodeNr].setMsg(buf);
   }
 }
+
+void debugCreate() {
+  
+  handleBuffer("a{id=123,temp=23.4,hum=\"80%\"}");
+}
+

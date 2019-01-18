@@ -12,7 +12,7 @@ class Node {
     char* getLastMsg();
     void setMsg(char* inMsg);
     void activateNode(byte inId);
-
+    bool isConfigured();
 };
 
 Node::Node(byte idIn) {
@@ -40,10 +40,12 @@ void Node::activateNode(byte inId) {
   this->configured = true;
 }
 
+bool Node::isConfigured() {
+  return this->configured;
+}
 byte Node::getId() {
   return this->id;
 }
-
 char* Node::getLastMsg() {
   return this->lastMsg;
 }

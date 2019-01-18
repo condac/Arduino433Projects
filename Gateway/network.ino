@@ -6,7 +6,7 @@
 byte mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
 };
-IPAddress ip(192, 168, 1, 177);
+IPAddress ip(192, 168, 0, 177);
 
 // Initialize the Ethernet server library
 // with the IP address and port you want to use
@@ -24,7 +24,7 @@ void setupEthernet() {
   //Ethernet.init(33);  // ESP32 with Adafruit Featherwing Ethernet
 
   // Open serial communications and wait for port to open:
-  Serial.begin(9600);
+  
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
@@ -55,13 +55,13 @@ void webServerLoop() {
     // listen for incoming clients
   EthernetClient client = server.available();
   if (client) {
-    Serial.println("new client");
+    //Serial.println("new client");
     // an http request ends with a blank line
     bool currentLineIsBlank = true;
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
-        Serial.write(c);
+        //Serial.write(c);
         // if you've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
         // so you can send a reply
@@ -83,6 +83,14 @@ void webServerLoop() {
             client.print(sensorReading);
             client.println("<br />");
           }
+          for (int i=0;i<NUM_NODES;i++) {
+            if (nodes[i].isConfigured()) {
+              client.println(nodes[i].getId());
+              client.println(nodes[i].getLastMsg());
+              client.println("<br />");
+              
+            }
+          }
           client.println("</html>");
           break;
         }
@@ -99,6 +107,6 @@ void webServerLoop() {
     delay(1);
     // close the connection:
     client.stop();
-    Serial.println("client disconnected");
+    //Serial.println("client disconnected");
   }
 }
