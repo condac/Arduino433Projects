@@ -1,0 +1,3 @@
+long getTime() {
+  return millis();
+}
