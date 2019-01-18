@@ -14,11 +14,19 @@ byte parseId(char* inBuf) {
   byte out = inBuf[0];
   return out;
 }
+void fixEnd(char* inBuf) {
+  for (int i=0;i<BUF_SIZE;i++) {
+    if (inBuf[i] == '\n') {
+      inBuf[i+1] = '\0';
+    }
+  }
+  
+}
 
 void handleBuffer(char* buf) {
  if (true) { // TODO check what id we are going to insert into
     byte foundId = parseId(buf);
-    
+    fixEnd(buf);
     bool foundNode = false;
     int foundNodeNr = 0;
     

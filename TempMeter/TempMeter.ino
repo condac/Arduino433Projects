@@ -2,6 +2,8 @@
 
 #include <RH_ASK.h>
 
+#include <dht.h>
+
 
 #define LED_PIN 13
 #define LED 13
@@ -11,8 +13,18 @@
 
 #define DEVICE_ID 2 // Uniqe id in your network
 
-#define RX_PIN 3
-#define TX_PIN 7
+#define RX_PIN 5 // not used
+#define TX_PIN 4
+
+#define DHT_DATA 8
+
+#define VCC_PIN 3 // power for radio
+#define GND_PIN 2
+
+#define VCC_PIN2 9 // power for DHT22
+#define GND_PIN2 7
+
+#define TEMP_CAL -0.5 // Calibrate temperature offset
 
 // Include RadioHead Amplitude Shift Keying Library
 #include <RH_ASK.h>
@@ -21,23 +33,27 @@
 // Create Amplitude Shift Keying Object
 RH_ASK rf_driver(2000,RX_PIN,TX_PIN);
 
+dht DHT;
+
 long blinkCounter = 0;
 long lastTime = -1000000000;
 
 float watts = 0.0;
 
+int readData = 0;
+float t;
+float h;
+
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Setup");
   for (byte i = 0; i <= A5; i++)  {
     pinMode (i, INPUT);  // set all pins to the most power saving state
     digitalWrite (i, LOW);  
   }
+  powerOn();
+  setupSleep8();
+  Serial.begin(9600);
+  Serial.println("Setup");
 
-  pinMode (5, OUTPUT);
-  digitalWrite (5, LOW); 
-  pinMode (6, OUTPUT);
-  digitalWrite (6, HIGH);  
 
   pinMode (LED_PIN, INPUT);
   digitalWrite (LED_PIN, LOW); 
@@ -45,49 +61,9 @@ void setup() {
   rf_driver.init();
 }
 
-void goToSleep() {
-  pinMode (LED, OUTPUT);
-  digitalWrite (LED, HIGH);
-  delay (50);
-  digitalWrite (LED, LOW);
-  delay (50);
-  pinMode (LED, INPUT);
-  // disable ADC
-  ADCSRA = 0;  
 
-  /* SLEEP_MODE_IDLE: 15 mA
-   SLEEP_MODE_ADC: 6.5 mA
-   SLEEP_MODE_PWR_SAVE: 1.62 mA
-   SLEEP_MODE_EXT_STANDBY: 1.62 mA
-   SLEEP_MODE_STANDBY : 0.84 mA
-   SLEEP_MODE_PWR_DOWN : 0.36 mA
-   */
-  //set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-  set_sleep_mode (SLEEP_MODE_STANDBY);  
-  sleep_enable();
-
-  // Do not interrupt before we go to sleep, or the
-  // ISR will detach interrupts and we won't wake.
-  noInterrupts ();
-  
-  // will be called when pin D2 goes low  
-  attachInterrupt (0, interuptFunction, FALLING);
-  EIFR = bit (INTF0);  // clear flag for interrupt 0
- 
-  // turn off brown-out enable in software
-  // BODS must be set to one and BODSE must be set to zero within four clock cycles
-  MCUCR = bit (BODS) | bit (BODSE);
-  // The BODS bit is automatically cleared after three clock cycles
-  MCUCR = bit (BODS); 
-  
-  // We are guaranteed that the sleep_cpu call will be done
-  // as the processor executes the next instruction after
-  // interrupts are turned on.
-  interrupts ();  // one cycle
-  sleep_cpu ();   // one cycle
-}
 void loop() {
-  delay(1000);
+  
   Serial.println("loop");
 
   // Main function 
@@ -98,17 +74,12 @@ void loop() {
 
 
 
-  // 1. Power on transmitter
+  powerOn();
+
   
 
-  // 2. Calculate time since last blink
-  long currentTime = millis();
-  long deltaTime = currentTime - lastTime;
-  lastTime = currentTime;
-  watts = deltaTime/3600.0; //TODO
-  Serial.println(deltaTime);
-  Serial.println(millis());
-  // 3. Add to counter for number of blinks seen
+  
+  // 3. Add to counter 
   blinkCounter++;
 
   
@@ -118,16 +89,18 @@ void loop() {
   // 5. Send all data
   String out = " {\"id\":"; // make sure first char is a space that we replace with id later
   out += DEVICE_ID;
-  out += ",\"b\":";
+  out += ",\"a\":";
   out.concat(blinkCounter);
-  out += ",\"w\":";
-  out.concat(watts);
+  out += ",\"t\":";
+  out.concat(t);
+  out += ",\"h\":";
+  out.concat(h);
   out += ",\"v\":";
   out.concat(battV);
   
-  out += ",}"; // end
+  out += ",}\n\0"; // end, also add a \n to find end on reciever side
 
-  // TODO send multiple times?
+  // TODO send multiple times? due to the long warmup of the dht after sleep mode we have lots of time to send multiple messages
   Serial.println(out);
   static char *msg = out.c_str();
   byte idchar= DEVICE_ID;
@@ -135,10 +108,43 @@ void loop() {
   rf_driver.send((uint8_t *)msg, strlen(msg));
   rf_driver.waitPacketSent();
 
-  delay(50);
+  
   //goToSleep();
+
+  // 1. Read DHT
+  delay(400); // extra delay for DHT to wake up
+  readData = DHT.read22(DHT_DATA);
+  t = DHT.temperature + TEMP_CAL;
+  h = DHT.humidity;
+  powerDown();
+  sleep8s();
+  //delay(8000);
 }
 
+void powerDown() {
+  pinMode (GND_PIN, OUTPUT);
+  digitalWrite (GND_PIN, LOW); 
+  pinMode (VCC_PIN, OUTPUT);
+  digitalWrite (VCC_PIN, LOW);   
+  
+  pinMode (GND_PIN2, OUTPUT);
+  digitalWrite (GND_PIN2, LOW); 
+  pinMode (VCC_PIN2, OUTPUT);
+  digitalWrite (VCC_PIN2, LOW); 
+}
+
+void powerOn() {
+  pinMode (GND_PIN, OUTPUT);
+  digitalWrite (GND_PIN, LOW); 
+  pinMode (VCC_PIN, OUTPUT);
+  digitalWrite (VCC_PIN, HIGH);   
+  
+  pinMode (GND_PIN2, OUTPUT);
+  digitalWrite (GND_PIN2, LOW); 
+  pinMode (VCC_PIN2, OUTPUT);
+  digitalWrite (VCC_PIN2, HIGH); 
+  
+}
 
 void interuptFunction() {
   // cancel sleep as a precaution
