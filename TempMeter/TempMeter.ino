@@ -31,7 +31,7 @@
 
 
 // Create Amplitude Shift Keying Object
-RH_ASK rf_driver(2000,RX_PIN,TX_PIN);
+RH_ASK rf_driver(1000,RX_PIN,TX_PIN);
 
 dht DHT;
 
@@ -98,7 +98,7 @@ void loop() {
   out += ",\"v\":";
   out.concat(battV);
   
-  out += ",}\n\0"; // end, also add a \n to find end on reciever side
+  out += "}\n\0"; // end, also add a \n to find end on reciever side
 
   // TODO send multiple times? due to the long warmup of the dht after sleep mode we have lots of time to send multiple messages
   Serial.println(out);
@@ -108,6 +108,10 @@ void loop() {
   rf_driver.send((uint8_t *)msg, strlen(msg));
   rf_driver.waitPacketSent();
 
+rf_driver.send((uint8_t *)msg, strlen(msg));
+  rf_driver.waitPacketSent();
+  rf_driver.send((uint8_t *)msg, strlen(msg));
+  rf_driver.waitPacketSent();
   
   //goToSleep();
 
@@ -131,6 +135,9 @@ void powerDown() {
   digitalWrite (GND_PIN2, LOW); 
   pinMode (VCC_PIN2, OUTPUT);
   digitalWrite (VCC_PIN2, LOW); 
+
+  pinMode (LED_PIN, OUTPUT);
+  digitalWrite (LED_PIN, LOW); 
 }
 
 void powerOn() {
@@ -143,6 +150,9 @@ void powerOn() {
   digitalWrite (GND_PIN2, LOW); 
   pinMode (VCC_PIN2, OUTPUT);
   digitalWrite (VCC_PIN2, HIGH); 
+
+  pinMode (LED_PIN, OUTPUT);
+  digitalWrite (LED_PIN, HIGH); 
   
 }
 

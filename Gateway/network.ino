@@ -72,26 +72,21 @@ void webServerLoop() {
           client.println("Connection: close");  // the connection will be closed after completion of the response
           client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
-          client.println("<!DOCTYPE HTML>");
-          client.println("<html>");
+          //client.println("<!DOCTYPE HTML>");
+          //client.println("<html>");
           // output the value of each analog input pin
-          for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
-            int sensorReading = analogRead(analogChannel);
-            client.print("analog input ");
-            client.print(analogChannel);
-            client.print(" is ");
-            client.print(sensorReading);
-            client.println("<br />");
-          }
+          client.println("{\"nodes\":[");
           for (int i=0;i<NUM_NODES;i++) {
             if (nodes[i].isConfigured()) {
-              client.println(nodes[i].getId());
+              //client.println(nodes[i].getId());
               client.println(nodes[i].getLastMsg());
-              client.println("<br />");
+              client.println(",");
               
             }
           }
-          client.println("</html>");
+          
+          client.println("{\"end\":1}]}");
+          //client.println("</html>");
           break;
         }
         if (c == '\n') {

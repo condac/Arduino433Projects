@@ -8,7 +8,7 @@
 
 
 // Create Amplitude Shift Keying Object
-RH_ASK rf_driver(2000,RX_PIN,TX_PIN);
+RH_ASK rf_driver(1000,RX_PIN,TX_PIN);
 
 void setup(){
   // set power to radio module

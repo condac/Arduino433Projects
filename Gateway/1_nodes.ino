@@ -12,6 +12,7 @@ void setupNodes() {
 
 byte parseId(char* inBuf) {
   byte out = inBuf[0];
+  inBuf[0] = ' ';
   return out;
 }
 void fixEnd(char* inBuf) {
@@ -49,6 +50,6 @@ void handleBuffer(char* buf) {
 
 void debugCreate() {
   
-  handleBuffer("a{id=123,temp=23.4,hum=\"80%\"}");
+  handleBuffer("a{\"id\":123,\"temp\":23.4,\"hum\":\"80%\"}");
 }
 
