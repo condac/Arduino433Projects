@@ -29,6 +29,7 @@ long txDelay = 0;
 long battV;
 bool trigger = false;
 float watts = 0.0;
+long heartbeat = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -38,7 +39,7 @@ void setup() {
   powerDown();
 
   pinMode (BLINK_PIN, INPUT);
-  digitalWrite (BLINK_PIN, HIGH); 
+  digitalWrite (BLINK_PIN, LOW); 
 
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(4,OUTPUT);
@@ -55,15 +56,20 @@ void setup() {
 void loop() {
 
   if (trigger) {
+    trigger = false;
     lastCounter = blinkCounter;
-    blinkCounter++;
+    
     loopHandle();
     delay(100);
     digitalWrite (LED_PIN, LOW); 
+    //pinMode (BLINK_PIN, OUTPUT);
+    //digitalWrite (BLINK_PIN, HIGH); 
+    //pinMode (BLINK_PIN, INPUT);
     trigger = false;
+    attachInterrupt(digitalPinToInterrupt(BLINK_PIN), interuptFunction, RISING);
   }
   if (txDelay<millis()) {
-    txDelay = TX_TIMER+millis()+random(3000);
+    txDelay = TX_TIMER+millis();
     sendRadio();
   }
 }
@@ -74,20 +80,27 @@ void loopHandle() {
   // 2. Calculate time since last blink
   long currentTime = millis();
   long deltaTime = currentTime - lastTime;
-  lastTime = currentTime;
-  watts = 3600000.0/deltaTime; //TODO
-  Serial.println(watts);
+  
+  if (deltaTime>120) {
+    lastTime = currentTime;
+    blinkCounter++;
+    watts = 3600000.0/deltaTime;
+  }
+   //TODO
+  //Serial.println(watts);
   // 3. Add to counter for number of blinks seen
   // moved to interupt function
   
   // 4. Measure battery voltage
-  battV = vccVoltage();
+  //battV = vccVoltage();
   
   
 }
 void interuptFunction() {
+  detachInterrupt(digitalPinToInterrupt(BLINK_PIN));
   trigger = true;
   digitalWrite (LED_PIN, HIGH); 
+  
 }
 
 long vccVoltage() {
@@ -106,6 +119,7 @@ long vccVoltage() {
 
 void sendRadio() {
   powerOn();
+  heartbeat++;
   // 5. Send all data
   String out = " {\"id\":";
   out += DEVICE_ID;
@@ -113,12 +127,13 @@ void sendRadio() {
   out.concat(blinkCounter);
   out += ",\"w\":";
   out.concat(watts);
-  
+  out += ",\"h\":";
+  out.concat(heartbeat);
   
   out += "}\n\0"; // end, also add a \n to find end on reciever side
 
   // TODO send multiple times?
-  Serial.println(out);
+  //Serial.println(out);
   static char *msg = out.c_str();
   byte idchar= DEVICE_ID;
   msg[0] = idchar;
