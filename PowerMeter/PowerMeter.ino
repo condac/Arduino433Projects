@@ -27,7 +27,7 @@ long lastCounter = 0;
 long lastTime = -1000000000;
 long txDelay = 0;
 long battV;
-
+bool trigger = false;
 float watts = 0.0;
 
 void setup() {
@@ -41,7 +41,10 @@ void setup() {
   digitalWrite (BLINK_PIN, HIGH); 
 
   pinMode(LED_BUILTIN, OUTPUT);
-  
+  pinMode(4,OUTPUT);
+  digitalWrite (4, LOW);
+  pinMode(3,OUTPUT);
+  digitalWrite (3, LOW);
   rf_driver.init();
   randomSeed(analogRead(4));
 
@@ -51,9 +54,13 @@ void setup() {
 
 void loop() {
 
-  if (blinkCounter>lastCounter) {
+  if (trigger) {
     lastCounter = blinkCounter;
+    blinkCounter++;
     loopHandle();
+    delay(100);
+    digitalWrite (LED_PIN, LOW); 
+    trigger = false;
   }
   if (txDelay<millis()) {
     txDelay = TX_TIMER+millis()+random(3000);
@@ -63,13 +70,13 @@ void loop() {
 
 void loopHandle() {
   //Serial.println("loopHandle");
-  digitalWrite (LED_PIN, LOW); 
+  
   // 2. Calculate time since last blink
   long currentTime = millis();
   long deltaTime = currentTime - lastTime;
   lastTime = currentTime;
   watts = 3600000.0/deltaTime; //TODO
-
+  Serial.println(watts);
   // 3. Add to counter for number of blinks seen
   // moved to interupt function
   
@@ -79,7 +86,7 @@ void loopHandle() {
   
 }
 void interuptFunction() {
-  blinkCounter++;
+  trigger = true;
   digitalWrite (LED_PIN, HIGH); 
 }
 
@@ -106,8 +113,7 @@ void sendRadio() {
   out.concat(blinkCounter);
   out += ",\"w\":";
   out.concat(watts);
-  out += ",\"v\":";
-  out.concat(battV);
+  
   
   out += "}\n\0"; // end, also add a \n to find end on reciever side
 

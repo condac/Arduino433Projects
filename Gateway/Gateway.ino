@@ -22,7 +22,7 @@ void setup(){
     setupRadio();
     setupEthernet();
     // Setup Serial Monitor
-    debugCreate();
+    //debugCreate();
     
 }
  
