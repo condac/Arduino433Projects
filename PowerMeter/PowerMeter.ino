@@ -100,7 +100,7 @@ long vccVoltage() {
 void sendRadio() {
   powerOn();
   // 5. Send all data
-  String out = "{\"id\":";
+  String out = " {\"id\":";
   out += DEVICE_ID;
   out += ",\"b\":";
   out.concat(blinkCounter);
@@ -109,12 +109,13 @@ void sendRadio() {
   out += ",\"v\":";
   out.concat(battV);
   
-  out += ",}"; // end
+  out += "}\n\0"; // end, also add a \n to find end on reciever side
 
   // TODO send multiple times?
   Serial.println(out);
   static char *msg = out.c_str();
-    
+  byte idchar= DEVICE_ID;
+  msg[0] = idchar;
   rf_driver.send((uint8_t *)msg, strlen(msg));
   rf_driver.waitPacketSent();
 
