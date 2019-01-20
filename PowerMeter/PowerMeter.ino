@@ -7,8 +7,8 @@ RH_ASK rf_driver;
 #define TX_POWER2 11 // the tx use 9-40mA and pins can only deliver 20mA
 
 #define TX_OUT 12 // This cant be changed, hardcoded in RH_ASK driver
-#define LED_PIN 13
-#define LED 13
+#define LED_PIN LED_BUILTIN
+
 
 
 #define BLINK_PIN 2
@@ -16,6 +16,7 @@ RH_ASK rf_driver;
 #define DEVICE_ID 123 // Uniqe id in your network
 
 long blinkCounter = 0;
+long lastCounter = 0;
 long lastTime = -1000000000;
 
 float watts = 0.0;
@@ -23,10 +24,7 @@ float watts = 0.0;
 void setup() {
   Serial.begin(9600);
   Serial.println("Setup");
-  for (byte i = 0; i <= A5; i++)  {
-    pinMode (i, INPUT);  // set all pins to the most power saving state
-    digitalWrite (i, LOW);  
-  }
+
 
   pinMode (TX_POWER, INPUT); // Power pin is left as INPUT to have it floating when not used
   digitalWrite (TX_POWER, LOW); // If it is set to OUTPUT it will shortout when one of the pins go HIGH
@@ -36,56 +34,25 @@ void setup() {
   pinMode (BLINK_PIN, INPUT);
   digitalWrite (BLINK_PIN, HIGH); 
 
-  pinMode (LED_PIN, INPUT);
-  digitalWrite (LED_PIN, LOW); 
+  pinMode(LED_BUILTIN, OUTPUT);
   
   rf_driver.init();
+
+  attachInterrupt(digitalPinToInterrupt(BLINK_PIN), interuptFunction, FALLING);
 }
 
-void goToSleep() {
-  pinMode (LED, OUTPUT);
-  digitalWrite (LED, HIGH);
-  delay (50);
-  digitalWrite (LED, LOW);
-  delay (50);
-  pinMode (LED, INPUT);
-  // disable ADC
-  ADCSRA = 0;  
 
-  /* SLEEP_MODE_IDLE: 15 mA
-   SLEEP_MODE_ADC: 6.5 mA
-   SLEEP_MODE_PWR_SAVE: 1.62 mA
-   SLEEP_MODE_EXT_STANDBY: 1.62 mA
-   SLEEP_MODE_STANDBY : 0.84 mA
-   SLEEP_MODE_PWR_DOWN : 0.36 mA
-   */
-  //set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-  set_sleep_mode (SLEEP_MODE_STANDBY);  
-  sleep_enable();
-
-  // Do not interrupt before we go to sleep, or the
-  // ISR will detach interrupts and we won't wake.
-  noInterrupts ();
-  
-  // will be called when pin D2 goes low  
-  attachInterrupt (0, interuptFunction, FALLING);
-  EIFR = bit (INTF0);  // clear flag for interrupt 0
- 
-  // turn off brown-out enable in software
-  // BODS must be set to one and BODSE must be set to zero within four clock cycles
-  MCUCR = bit (BODS) | bit (BODSE);
-  // The BODS bit is automatically cleared after three clock cycles
-  MCUCR = bit (BODS); 
-  
-  // We are guaranteed that the sleep_cpu call will be done
-  // as the processor executes the next instruction after
-  // interrupts are turned on.
-  interrupts ();  // one cycle
-  sleep_cpu ();   // one cycle
-}
 void loop() {
-  Serial.println("loop");
 
+  if (blinkCounter>lastCounter) {
+    lastCounter = blinkCounter;
+    loopHandle();
+  }
+
+}
+
+void loopHandle() {
+  Serial.println("loopHandle");
   // Main function when we see a blink on the power meter
   // Steps to do:
   // 1. Power on transmitter, so it can warm up while we do other stuff
@@ -95,7 +62,7 @@ void loop() {
   // 5. Send all data
   // 6. Power off
 
-
+  
   // 1. Power on transmitter
   pinMode (TX_POWER, OUTPUT); 
   pinMode (TX_POWER2, OUTPUT);
@@ -109,11 +76,12 @@ void loop() {
   long currentTime = millis();
   long deltaTime = currentTime - lastTime;
   lastTime = currentTime;
-  watts = deltaTime/3600.0; //TODO
+  watts = 3600000.0/deltaTime; //TODO
   Serial.println(deltaTime);
   Serial.println(millis());
   // 3. Add to counter for number of blinks seen
-  blinkCounter++;
+  // moved to interupt function
+  
 
   
   // 4. Measure battery voltage
@@ -146,19 +114,9 @@ void loop() {
   
   digitalWrite (LED_PIN, HIGH);
   pinMode (LED_PIN, OUTPUT);
-  delay(50);
-  goToSleep();
 }
-
-
 void interuptFunction() {
-  // cancel sleep as a precaution
-  sleep_disable();
-  // precautionary while we do other stuff
-  detachInterrupt (0);
-
-  // When this is done the loop() function will be called and we do everything there
-  
+  blinkCounter++;
 }
 
 long vccVoltage() {
