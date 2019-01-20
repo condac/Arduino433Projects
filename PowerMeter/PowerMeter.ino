@@ -63,7 +63,7 @@ void loop() {
 
 void loopHandle() {
   //Serial.println("loopHandle");
-
+  digitalWrite (LED_PIN, LOW); 
   // 2. Calculate time since last blink
   long currentTime = millis();
   long deltaTime = currentTime - lastTime;
@@ -76,11 +76,11 @@ void loopHandle() {
   // 4. Measure battery voltage
   battV = vccVoltage();
   
-  digitalWrite (LED_PIN, HIGH);
-  pinMode (LED_PIN, OUTPUT);
+  
 }
 void interuptFunction() {
   blinkCounter++;
+  digitalWrite (LED_PIN, HIGH); 
 }
 
 long vccVoltage() {
