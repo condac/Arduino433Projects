@@ -17,7 +17,7 @@ void setup(){
     pinMode (8, OUTPUT);
     digitalWrite (8, HIGH);
     
-    Serial.begin(9600);
+    Serial.begin(115200);
     setupNodes();
     setupRadio();
     setupEthernet();
