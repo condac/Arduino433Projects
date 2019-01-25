@@ -134,3 +134,13 @@ void debugCreate() {
   
   handleBuffer("a{\"id\":123,\"temp\":23.4,\"hum\":\"80%\"}");
 }
+void debugPrint() {
+  for (int i=0;i<NUM_NODES;i++) {
+        if (nodes[i].isConfigured()) {
+          //client.println(nodes[i].getId());
+          Serial.println(nodes[i].getLastMsg());
+          Serial.println(",");
+              
+      }
+    }
+}
