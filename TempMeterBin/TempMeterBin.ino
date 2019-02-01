@@ -49,7 +49,7 @@ INTUNION_t idata;
 LONGUNION_t ldata;
 
 // Create Amplitude Shift Keying Object
-RH_ASK rf_driver(2000,RX_PIN,TX_PIN);
+RH_ASK rf_driver(1000,RX_PIN,TX_PIN);
 
 dht DHT;
 
@@ -69,8 +69,8 @@ void setup() {
   }
   powerOn();
   setupSleep8();
-  Serial.begin(9600);
-  Serial.println("Setup");
+  //Serial.begin(9600);
+  //Serial.println("Setup");
 
 
   pinMode (LED_PIN, INPUT);
@@ -82,7 +82,7 @@ void setup() {
 
 void loop() {
   
-  Serial.println("loop");
+  //Serial.println("loop");
 
   // Main function 
   // Steps to do:
@@ -149,9 +149,9 @@ void loop() {
   
   rf_driver.send((uint8_t *)binmsg, buflen);
   rf_driver.waitPacketSent();
-  //delay(100);
-  //rf_driver.send((uint8_t *)binmsg, buflen);
-  //rf_driver.waitPacketSent();
+  delay(100);
+  rf_driver.send((uint8_t *)binmsg, buflen);
+  rf_driver.waitPacketSent();
   //delay(100);
   //rf_driver.send((uint8_t *)binmsg, buflen);
   //rf_driver.waitPacketSent();
@@ -159,15 +159,26 @@ void loop() {
   //goToSleep();
 
   // 1. Read DHT
-  //delay(200); // extra delay for DHT to wake up
+  sleep8s(); // extra delay for DHT to wake up
   readData = DHT.read22(DHT_DATA);
   t = DHT.temperature + TEMP_CAL;
   h = DHT.humidity;
   powerDown();
   
-  //sleep8s();
-  //__asm__ __volatile__ ("nop\n\t");
-  //sleep8s();
+  sleep8s();
+  __asm__ __volatile__ ("nop\n\t");
+  sleep8s();
+    __asm__ __volatile__ ("nop\n\t");
+  sleep8s();
+    __asm__ __volatile__ ("nop\n\t");
+  sleep8s();
+    __asm__ __volatile__ ("nop\n\t");
+  sleep8s();
+    __asm__ __volatile__ ("nop\n\t");
+  sleep8s();
+    __asm__ __volatile__ ("nop\n\t");  
+  sleep8s();
+  __asm__ __volatile__ ("nop\n\t");
   //delay(8000);
 }
 
@@ -197,8 +208,8 @@ void powerOn() {
   pinMode (VCC_PIN2, OUTPUT);
   digitalWrite (VCC_PIN2, HIGH); 
 
-  pinMode (LED_PIN, OUTPUT);
-  digitalWrite (LED_PIN, HIGH); 
+  //pinMode (LED_PIN, OUTPUT);
+  //digitalWrite (LED_PIN, HIGH); 
   
 }
 
