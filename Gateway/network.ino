@@ -4,7 +4,7 @@
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
 byte mac[] = {
-  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+  0xde, 0xad, 0xbe, 0xef, 0xee, 0xee
 };
 IPAddress ip(192, 168, 0, 177);
 
@@ -55,7 +55,7 @@ void webServerLoop() {
     // listen for incoming clients
   EthernetClient client = server.available();
   if (client) {
-    //Serial.println("new client");
+    Serial.println("new client");
     // an http request ends with a blank line
     bool currentLineIsBlank = true;
     while (client.connected()) {
