@@ -2,6 +2,20 @@
 #include <avr/power.h>
 #include <avr/wdt.h>
 
+enum period_t
+{
+  SLEEP_15MS,
+  SLEEP_30MS,
+  SLEEP_60MS,
+  SLEEP_120MS,
+  SLEEP_250MS,
+  SLEEP_500MS,
+  SLEEP_1S,
+  SLEEP_2S,
+  SLEEP_4S,
+  SLEEP_8S,
+  SLEEP_FOREVER
+};
 
 volatile bool watchdogActivated = false;
 
@@ -44,63 +58,22 @@ void setupSleep8() {
 void sleep8s() {
   // Put the Arduino to sleep.
 
-  // Set sleep to full power down.  Only external interrupts or 
-  // the watchdog timer can wake the CPU!
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  // ADC off
+  ADCSRA &= ~(1 << ADEN);
 
-  // Turn off the ADC while asleep.
-  power_adc_disable();
+  wdt_enable(SLEEP_8S);
+  WDTCSR |= (1 << WDIE);
 
-  // Enable sleep and enter sleep mode.
-  sleep_mode();
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN); 
+  cli();
+  sleep_enable();   
+  sleep_bod_disable(); 
+  sei();
+  sleep_cpu();      
+  sleep_disable();    
+  sei();
 
-  // CPU is now asleep and program execution completely halts!
-  // Once awake, execution will resume at this point.
-  
-  // When awake, disable sleep mode and turn on all devices.
-  sleep_disable();
-  power_all_enable();
+  ADCSRA |= (1 << ADEN);
 
-}
 
-void goToSleep() {
-  pinMode (LED, OUTPUT);
-  digitalWrite (LED, HIGH);
-  delay (50);
-  digitalWrite (LED, LOW);
-  delay (50);
-  pinMode (LED, INPUT);
-  // disable ADC
-  ADCSRA = 0;  
-
-  /* SLEEP_MODE_IDLE: 15 mA
-   SLEEP_MODE_ADC: 6.5 mA
-   SLEEP_MODE_PWR_SAVE: 1.62 mA
-   SLEEP_MODE_EXT_STANDBY: 1.62 mA
-   SLEEP_MODE_STANDBY : 0.84 mA
-   SLEEP_MODE_PWR_DOWN : 0.36 mA
-   */
-  //set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-  set_sleep_mode (SLEEP_MODE_PWR_DOWN);  
-  sleep_enable();
-
-  // Do not interrupt before we go to sleep, or the
-  // ISR will detach interrupts and we won't wake.
-  noInterrupts ();
-  
-  // will be called when pin D2 goes low  
-  attachInterrupt (0, interuptFunction, FALLING);
-  EIFR = bit (INTF0);  // clear flag for interrupt 0
- 
-  // turn off brown-out enable in software
-  // BODS must be set to one and BODSE must be set to zero within four clock cycles
-  MCUCR = bit (BODS) | bit (BODSE);
-  // The BODS bit is automatically cleared after three clock cycles
-  MCUCR = bit (BODS); 
-  
-  // We are guaranteed that the sleep_cpu call will be done
-  // as the processor executes the next instruction after
-  // interrupts are turned on.
-  interrupts ();  // one cycle
-  sleep_cpu ();   // one cycle
 }
