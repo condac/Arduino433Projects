@@ -144,7 +144,7 @@ void loop() {
     t = DHT.temperature + TEMP_CAL;
     h = DHT.humidity;
   }
-  
+  //delay(100);
   powerDown();
   //uint32_t stop = micros(); // Total time 937ms
   //Serial.print(",\t");
@@ -220,17 +220,19 @@ void debug() {
     Serial.flush();
 }
 void powerDown() {
-  pinMode (GND_PIN, OUTPUT);
+  pinMode (GND_PIN, INPUT);
   digitalWrite (GND_PIN, LOW); 
-  pinMode (VCC_PIN, OUTPUT);
+  pinMode (VCC_PIN, INPUT);
   digitalWrite (VCC_PIN, LOW);   
   
-  pinMode (GND_PIN2, OUTPUT);
+  pinMode (GND_PIN2, INPUT);
   digitalWrite (GND_PIN2, LOW); 
-  pinMode (VCC_PIN2, OUTPUT);
-  digitalWrite (VCC_PIN2, LOW); 
-
-  pinMode (LED_PIN, OUTPUT);
+  pinMode (VCC_PIN2, INPUT_PULLUP);
+  //digitalWrite (VCC_PIN2, LOW); 
+  pinMode(VCC_PIN2, INPUT);
+  digitalWrite (VCC_PIN2, LOW);
+  
+  pinMode (LED_PIN, INPUT);
   digitalWrite (LED_PIN, LOW); 
 
   for (byte i = 0; i <= A5; i++)  {
@@ -239,10 +241,11 @@ void powerDown() {
   }
 }
 void powerDownRadio() {
-  pinMode (GND_PIN, OUTPUT);
+  pinMode (GND_PIN, INPUT);
   digitalWrite (GND_PIN, LOW); 
-  pinMode (VCC_PIN, OUTPUT);
-  digitalWrite (VCC_PIN, LOW);   
+  pinMode (VCC_PIN, INPUT_PULLUP);
+  pinMode(VCC_PIN, INPUT);
+  digitalWrite (VCC_PIN, LOW); 
   
 
   //pinMode (LED_PIN, OUTPUT);
@@ -250,15 +253,32 @@ void powerDownRadio() {
 }
 
 void powerOn() {
+  pinMode (VCC_PIN, INPUT);
+  digitalWrite (VCC_PIN, LOW);
   pinMode (GND_PIN, OUTPUT);
-  digitalWrite (GND_PIN, LOW); 
-  pinMode (VCC_PIN, OUTPUT);
-  digitalWrite (VCC_PIN, HIGH);   
+  digitalWrite (GND_PIN, LOW);
+  pinMode (VCC_PIN, INPUT_PULLUP);
   
+
+  pinMode (VCC_PIN2, INPUT);
+  digitalWrite (VCC_PIN2, LOW);
   pinMode (GND_PIN2, OUTPUT);
-  digitalWrite (GND_PIN2, LOW); 
+  digitalWrite (GND_PIN2, LOW);
+  pinMode (VCC_PIN2, INPUT_PULLUP);
+  delay(1);
   pinMode (VCC_PIN2, OUTPUT);
   digitalWrite (VCC_PIN2, HIGH); 
+  //delay(2);
+  pinMode (GND_PIN2, OUTPUT);
+  digitalWrite (GND_PIN2, LOW); 
+  //delay(1);
+
+  pinMode (VCC_PIN, OUTPUT);
+  digitalWrite (VCC_PIN, HIGH); 
+  //delay(2);
+  pinMode (GND_PIN, OUTPUT);
+  digitalWrite (GND_PIN, LOW); 
+  
 
   pinMode (LED_PIN, OUTPUT);
   digitalWrite (LED_PIN, HIGH); 
