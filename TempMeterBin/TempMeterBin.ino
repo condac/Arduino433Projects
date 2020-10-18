@@ -91,9 +91,9 @@ void loop() {
   // 1. Read temp
   // 2. send
   // 3. sleep
-
+  
   powerOn();
-
+  //uint32_t start = micros();
   // 3. Add to counter 
   blinkCounter++;
 
@@ -104,22 +104,31 @@ void loop() {
   // 5. Send all data
 
   createData();
+
+  // Start to here 2.2ms
   
-  rf_driver.send((uint8_t *)binmsg, buflen);
+  //uint32_t startradio = micros();
+  rf_driver.send((uint8_t *)binmsg, buflen); // Takes 420.5ms
   rf_driver.waitPacketSent();
+
+  // We do 2 send burst to give receiver time to sync to signal and reliably get a response
   delay(random(10, 100));
   rf_driver.send((uint8_t *)binmsg, buflen);
   rf_driver.waitPacketSent();
 
   
+  
   //goToSleep();
-  powerDownRadio();
+  powerDownRadio(); // Radio is on 850ms-950ms depending on random delay
+  //uint32_t stopradio = micros();
   // 1. Read DHT
   //powerOn();
   //sleep8s(); // extra delay for DHT to wake up
   readData = DHT.read22(DHT_DATA);
   retrys = 0;
   while(readData !=DHTLIB_OK) {
+    // Reading the DHT22 from power up takes at least 750ms until it gets a correct response
+    // This is why we waste time sending data before reading the temperature
     delay(5);
     readData = DHT.read22(DHT_DATA);
     retrys++;
@@ -137,6 +146,17 @@ void loop() {
   }
   
   powerDown();
+  //uint32_t stop = micros(); // Total time 937ms
+  //Serial.print(",\t");
+  //Serial.print(retrys);
+  //Serial.print(",\t");
+  //Serial.print(startradio-start);
+  //Serial.print(",\t");
+  //Serial.print(stopradio-startradio);
+  //Serial.print(",\t");
+  //Serial.print(stop-start);
+  //Serial.println();
+  //Serial.flush();
   //delay(5000);
   //debug();
 
