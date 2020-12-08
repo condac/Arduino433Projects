@@ -69,7 +69,7 @@ void loop() {
     attachInterrupt(digitalPinToInterrupt(BLINK_PIN), interuptFunction, RISING);
   }
   if (txDelay<millis()) {
-    txDelay = TX_TIMER+millis();
+    txDelay = TX_TIMER+millis() + random(1000);
     sendRadio();
   }
 }
@@ -129,6 +129,8 @@ void sendRadio() {
   out.concat(watts);
   out += ",\"h\":";
   out.concat(heartbeat);
+  out += ",\"x\":";
+  out.concat(heartbeat);
   
   out += "}\n\0"; // end, also add a \n to find end on reciever side
 
@@ -137,9 +139,13 @@ void sendRadio() {
   static char *msg = out.c_str();
   byte idchar= DEVICE_ID;
   msg[0] = idchar;
+  String out2 = " {\"id\":0}\n\0";
+  static char *msg2 = out2.c_str();
+  msg2[0] = 1;
+  rf_driver.send((uint8_t *)msg2, strlen(msg2));
+  rf_driver.waitPacketSent();
   rf_driver.send((uint8_t *)msg, strlen(msg));
   rf_driver.waitPacketSent();
-
   // 6. Power off
   powerDown();
 }

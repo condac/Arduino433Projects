@@ -30,6 +30,7 @@ void loop(){
     // Set buffer to size of expected message
     uint8_t buf[BUF_SIZE];
     uint8_t buflen = sizeof(buf);
+    memset(buf, 0, sizeof(buf));
     // Check if received packet is correct size
     if (rf_driver.recv(buf, &buflen)) {
       // Message received with valid checksum
@@ -37,7 +38,7 @@ void loop(){
       Serial.println((char*)buf);   
       
       handleBuffer(buf);
-      debugPrint();
+      //debugPrint();
     }
     
     webServerLoop();

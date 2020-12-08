@@ -41,16 +41,18 @@ void fixEnd(char* inBuf) {
       inBuf[i+1] = '\0';
     }
   }
-  
+  inBuf[BUF_SIZE-1] = '}';
+  inBuf[BUF_SIZE] = '\0';
 }
 
 void handleBuffer(char* buf) {
+  byte nrvar=buf[1];
  if (buf[1] == '{') { // if json format
     //byte foundId = parseId(buf);
     fixEnd(buf);
     addMsg(buf);
   }
-  else {
+  else if (nrvar>2 && nrvar < 6) {
     createJSONfromBinFormat(buf);
   }
 }
